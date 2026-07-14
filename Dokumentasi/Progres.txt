@@ -1,0 +1,7 @@
+1. Reassembly dan Cleaning Frame
+
+2. Modif Z Endstop model adjuster
+
+3. Ganti Spring bed model lebih rigid
+
+4. Penarikan jalur UART direct IC untuk tambahan modul integrasi, board asli tidak ada output UART siap pakai sehingga perlu solder / tarik jalur baru dari IC CH340 atau jalur UART ke main IC.
