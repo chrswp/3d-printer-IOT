@@ -1,0 +1,297 @@
+```react
+import React, { useState, useEffect } from 'react';
+import { 
+  Trophy, 
+  Gamepad2, 
+  Music, 
+  Anchor, 
+  Car, 
+  Smartphone, 
+  PenTool, 
+  Box, 
+  Circle, 
+  Star, 
+  Hexagon,
+  CheckCircle2,
+  XCircle,
+  Video,
+  Printer,
+  Wifi,
+  Loader2,
+  ChevronLeft
+} from 'lucide-react';
+
+// --- DATA REWARD ---
+// Menyediakan 10 pilihan file STL yang bisa dicetak
+const REWARDS = [
+  { id: 1, name: "Gantungan Kunci Gitar", icon: Music, color: "bg-blue-500", time: "45 Menit" },
+  { id: 2, name: "Miniatur Perahu", icon: Anchor, color: "bg-teal-500", time: "1 Jam 20 Menit" },
+  { id: 3, name: "Miniatur Mobil", icon: Car, color: "bg-red-500", time: "2 Jam" },
+  { id: 4, name: "Stand Smartphone", icon: Smartphone, color: "bg-purple-500", time: "1 Jam 45 Menit" },
+  { id: 5, name: "Tempat Pensil", icon: PenTool, color: "bg-yellow-500", time: "3 Jam" },
+  { id: 6, name: "Dadu Game 3D", icon: Box, color: "bg-green-500", time: "30 Menit" },
+  { id: 7, name: "Koin Kolektor", icon: Circle, color: "bg-amber-500", time: "25 Menit" },
+  { id: 8, name: "Bintang Penghargaan", icon: Star, color: "bg-orange-500", time: "40 Menit" },
+  { id: 9, name: "Logo Heksagon", icon: Hexagon, color: "bg-indigo-500", time: "50 Menit" },
+  { id: 10, name: "Trofi Mini Level", icon: Trophy, color: "bg-pink-500", time: "2 Jam 15 Menit" }
+];
+
+export default function App() {
+  // State Management
+  const [view, setView] = useState('selection'); // 'selection' | 'printing'
+  const [selectedItem, setSelectedItem] = useState(null);
+  const [showModal, setShowModal] = useState(false);
+  const [printStatus, setPrintStatus] = useState(''); // 'triggering' | 'streaming'
+  
+  // Waktu saat ini untuk fake timestamp kamera
+  const [currentTime, setCurrentTime] = useState(new Date().toLocaleTimeString());
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentTime(new Date().toLocaleTimeString());
+    }, 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  // --- HANDLERS ---
+  const handleSelectReward = (item) => {
+    setSelectedItem(item);
+    setShowModal(true);
+  };
+
+  const handleCancel = () => {
+    setShowModal(false);
+    setSelectedItem(null);
+  };
+
+  const handleConfirm = () => {
+    setShowModal(false);
+    setView('printing');
+    setPrintStatus('triggering');
+
+    // Simulasi proses pengiriman Webhook ke ESP32 / 3D Printer
+    setTimeout(() => {
+      setPrintStatus('streaming');
+    }, 3000); // Setelah 3 detik, webhook dianggap sukses dan buka kamera
+  };
+
+  const handleBackToMenu = () => {
+    setView('selection');
+    setSelectedItem(null);
+    setPrintStatus('');
+  };
+
+  // --- RENDERERS ---
+  return (
+    <div className="min-h-screen bg-slate-900 text-slate-100 font-sans selection:bg-indigo-500/30">
+      
+      {/* Tambahan CSS Animasi Inline untuk efek kamera */}
+      <style>{`
+        @keyframes scanline {
+          0% { transform: translateY(-100%); }
+          100% { transform: translateY(800%); }
+        }
+        .animate-scanline {
+          animation: scanline 4s linear infinite;
+        }
+      `}</style>
+
+      {/* Header Utama */}
+      <header className="bg-slate-800 border-b border-slate-700 p-6 text-center shadow-lg">
+        <div className="max-w-4xl mx-auto flex items-center justify-center gap-3">
+          <Gamepad2 className="w-8 h-8 text-indigo-400" />
+          <h1 className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-indigo-400 to-purple-400 bg-clip-text text-transparent">
+            Serious Game - 3D Print Reward System
+          </h1>
+        </div>
+      </header>
+
+      <main className="max-w-5xl mx-auto p-6">
+        
+        {/* VIEW 1: PEMILIHAN REWARD */}
+        {view === 'selection' && (
+          <div className="space-y-8 animate-in fade-in duration-500">
+            {/* Kartu Ucapan Selamat */}
+            <div className="bg-gradient-to-br from-indigo-900/50 to-purple-900/50 border border-indigo-500/30 rounded-2xl p-8 text-center shadow-2xl">
+              <Trophy className="w-16 h-16 text-yellow-400 mx-auto mb-4 animate-bounce" />
+              <h2 className="text-3xl font-extrabold text-white mb-2">SELAMAT!</h2>
+              <p className="text-lg text-indigo-200">
+                Anda telah berhasil menyelesaikan level ini dengan gemilang.<br/>
+                Silakan pilih satu dari 10 hadiah fisik di bawah ini untuk dicetak langsung oleh mesin 3D Printer kami!
+              </p>
+            </div>
+
+            {/* Grid 10 Reward */}
+            <div>
+              <h3 className="text-xl font-semibold mb-4 text-slate-300 flex items-center gap-2">
+                <GiftIcon /> Katalog Hadiah (File STL)
+              </h3>
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+                {REWARDS.map((item) => {
+                  const Icon = item.icon;
+                  return (
+                    <button
+                      key={item.id}
+                      onClick={() => handleSelectReward(item)}
+                      className="group relative bg-slate-800 rounded-xl p-6 border border-slate-700 hover:border-indigo-400 hover:bg-slate-750 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-indigo-500/20 text-center flex flex-col items-center gap-3"
+                    >
+                      <div className={`w-16 h-16 rounded-full ${item.color} bg-opacity-20 flex items-center justify-center group-hover:scale-110 transition-transform duration-300`}>
+                        <Icon className={`w-8 h-8 ${item.color.replace('bg-', 'text-')}`} />
+                      </div>
+                      <h4 className="font-medium text-sm text-slate-200 group-hover:text-white">
+                        {item.name}
+                      </h4>
+                      <span className="text-xs text-slate-500 bg-slate-900 px-2 py-1 rounded-full border border-slate-700">
+                        ⏱ {item.time}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* VIEW 2: HALAMAN PENCETAKAN & STREAMING KAMERA */}
+        {view === 'printing' && selectedItem && (
+          <div className="max-w-3xl mx-auto space-y-6 animate-in slide-in-from-bottom-4 duration-500">
+            
+            <button 
+              onClick={handleBackToMenu}
+              className="flex items-center gap-2 text-slate-400 hover:text-white transition-colors"
+            >
+              <ChevronLeft className="w-5 h-5" /> Kembali ke Katalog
+            </button>
+
+            <div className="bg-slate-800 rounded-2xl border border-slate-700 p-6 md:p-8 shadow-2xl">
+              <div className="flex flex-col md:flex-row items-start md:items-center justify-between border-b border-slate-700 pb-6 mb-6">
+                <div>
+                  <h2 className="text-2xl font-bold text-white mb-1">Status Pencetakan</h2>
+                  <p className="text-slate-400 flex items-center gap-2">
+                    Mencetak: <span className="font-semibold text-indigo-400">{selectedItem.name}</span>
+                  </p>
+                </div>
+                <div className={`mt-4 md:mt-0 px-4 py-2 rounded-full flex items-center gap-2 text-sm font-bold ${printStatus === 'triggering' ? 'bg-amber-500/20 text-amber-400' : 'bg-emerald-500/20 text-emerald-400'}`}>
+                  {printStatus === 'triggering' ? (
+                    <><Loader2 className="w-4 h-4 animate-spin" /> MENGIRIM TRIGGER...</>
+                  ) : (
+                    <><Wifi className="w-4 h-4 animate-pulse" /> TERKONEKSI KE PRINTER</>
+                  )}
+                </div>
+              </div>
+
+              {/* Tampilan ESP32 Cam Stream */}
+              <div className="relative bg-black rounded-xl overflow-hidden aspect-video border-2 border-slate-900 shadow-inner group">
+                
+                {/* Overlay Indikator Kamera */}
+                <div className="absolute top-4 left-4 z-10 flex items-center gap-2">
+                  <div className={`w-3 h-3 rounded-full ${printStatus === 'streaming' ? 'bg-red-500 animate-pulse' : 'bg-slate-600'}`}></div>
+                  <span className={`font-mono text-sm font-bold tracking-wider ${printStatus === 'streaming' ? 'text-red-500' : 'text-slate-500'}`}>
+                    LIVE CAM
+                  </span>
+                </div>
+                
+                <div className="absolute top-4 right-4 z-10 text-slate-400 font-mono text-xs bg-black/50 px-2 py-1 rounded">
+                  ESP32-CAM | {currentTime}
+                </div>
+
+                {/* Konten Simulasi Kamera */}
+                {printStatus === 'triggering' ? (
+                  <div className="absolute inset-0 flex flex-col items-center justify-center text-slate-500">
+                    <Wifi className="w-12 h-12 mb-4 animate-ping opacity-20" />
+                    <p className="font-mono text-sm">Menghubungkan ke Webhook ESP32...</p>
+                  </div>
+                ) : (
+                  <div className="absolute inset-0 flex items-center justify-center relative overflow-hidden bg-[#0a0a0a]">
+                    {/* Fake Camera Grid */}
+                    <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.03)_1px,transparent_1px)] bg-[size:40px_40px] pointer-events-none"></div>
+                    
+                    {/* Animasi Printer (Menggambarkan proses cetak sedang berjalan) */}
+                    <div className="relative z-10 flex flex-col items-center">
+                      <div className="relative">
+                        <Printer className="w-24 h-24 text-slate-600" />
+                        {/* Fake printing head moving */}
+                        <div className="absolute bottom-2 left-0 w-8 h-2 bg-indigo-500 rounded animate-[bounce_2s_infinite]"></div>
+                      </div>
+                      <p className="mt-4 font-mono text-indigo-400/70 text-sm animate-pulse">Sedang mencetak layer 15/450...</p>
+                    </div>
+
+                    {/* Efek Garis Scan Kamera CCTV */}
+                    <div className="absolute top-0 left-0 w-full h-8 bg-gradient-to-b from-transparent via-green-500/10 to-transparent pointer-events-none animate-scanline opacity-50"></div>
+                  </div>
+                )}
+              </div>
+
+              {printStatus === 'streaming' && (
+                 <div className="mt-6 p-4 bg-indigo-500/10 border border-indigo-500/20 rounded-lg flex items-start gap-3">
+                    <Video className="w-5 h-5 text-indigo-400 mt-0.5 flex-shrink-0" />
+                    <p className="text-sm text-indigo-200">
+                      Modul ESP32-Cam telah aktif. Anda dapat memonitor proses pencetakan 3D Anda secara real-time. Proses ini membutuhkan waktu sekitar <strong className="text-white">{selectedItem.time}</strong>.
+                    </p>
+                 </div>
+              )}
+            </div>
+          </div>
+        )}
+
+      </main>
+
+      {/* MODAL KONFIRMASI (Overlay) */}
+      {showModal && selectedItem && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-slate-800 border border-slate-700 rounded-2xl shadow-2xl max-w-md w-full overflow-hidden animate-in zoom-in-95 duration-200">
+            
+            <div className="p-6 text-center">
+              <div className={`w-20 h-20 mx-auto rounded-full ${selectedItem.color} bg-opacity-20 flex items-center justify-center mb-4`}>
+                <selectedItem.icon className={`w-10 h-10 ${selectedItem.color.replace('bg-', 'text-')}`} />
+              </div>
+              <h2 className="text-2xl font-bold text-white mb-2">Konfirmasi Hadiah</h2>
+              <p className="text-slate-300 mb-6">
+                Anda memilih <strong className="text-indigo-400 text-lg block mt-1">{selectedItem.name}</strong>
+              </p>
+              
+              <div className="bg-slate-900/50 rounded-lg p-4 mb-6 text-sm text-slate-400 text-left flex items-start gap-3">
+                <Printer className="w-5 h-5 text-slate-500 flex-shrink-0 mt-0.5" />
+                <p>
+                  Jika Anda menekan Konfirmasi, sistem akan mengirimkan instruksi file STL terkait ke 3D Printer (Ender 3D) dan memulai proses pemanasan nozzle.
+                </p>
+              </div>
+
+              <div className="flex gap-3">
+                <button 
+                  onClick={handleCancel}
+                  className="flex-1 py-3 px-4 rounded-xl font-semibold text-slate-300 bg-slate-700 hover:bg-slate-600 transition-colors flex items-center justify-center gap-2"
+                >
+                  <XCircle className="w-5 h-5" /> Batal
+                </button>
+                <button 
+                  onClick={handleConfirm}
+                  className="flex-1 py-3 px-4 rounded-xl font-semibold text-white bg-indigo-600 hover:bg-indigo-500 transition-colors flex items-center justify-center gap-2 shadow-lg shadow-indigo-500/30"
+                >
+                  <CheckCircle2 className="w-5 h-5" /> Konfirmasi
+                </button>
+              </div>
+            </div>
+            
+          </div>
+        </div>
+      )}
+
+    </div>
+  );
+}
+
+// Komponen Pembantu untuk Icon
+function GiftIcon() {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-indigo-400">
+      <polyline points="20 12 20 22 4 22 4 12"></polyline>
+      <rect x="2" y="7" width="20" height="5"></rect>
+      <line x1="12" y1="22" x2="12" y2="7"></line>
+      <path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z"></path>
+      <path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"></path>
+    </svg>
+  );
+}
+
+```
