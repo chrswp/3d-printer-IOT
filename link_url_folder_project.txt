@@ -1,3 +1,4 @@
 1. Video setting awal printer https://youtu.be/KZlUgAuW6Y8?si=8iagdg21RVPNlBLb
 
-2. 
+2. Video test integrasi 3dprinter akses dari web https://www.youtube.com/watch?v=SD5eyY_p02E
+Konsep PC <- VIA WIFI/LAN -> Modul Integrasi <-- UART --> 3D Printer
