@@ -1,0 +1,865 @@
+```h
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>POS Gentan Kopi - Realtime Cloud</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        @media print {
+            body { background: #ffffff !important; margin: 0 !important; padding: 0 !important; color: #000000 !important; }
+            header, aside, main, nav, button, .no-print { display: none !important; }
+            #printable-invoice { display: block !important; position: absolute; left: 0; top: 0; width: 100%; margin: 0; padding: 10px; }
+            #printable-invoice table { width: 100%; border-collapse: collapse; }
+        }
+    </style>
+</head>
+<body class="bg-gray-100 font-sans antialiased">
+
+    <!-- Header / Navbar -->
+    <header class="bg-amber-900 text-white shadow-md no-print">
+        <div class="container mx-auto px-4 py-3 flex justify-between items-center">
+            <div class="flex items-center space-x-3">
+                <div class="bg-amber-700 p-2 rounded-full font-bold text-xl">☕</div>
+                <div>
+                    <h1 class="text-xl font-bold leading-none">Gentan Kopi POS</h1>
+                    <span class="text-xs text-amber-200" id="sync-status">Menghubungkan ke Cloud...</span>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <div class="container mx-auto px-2 md:px-4 py-4 flex flex-col md:flex-row gap-4 no-print">
+
+        <!-- Navigation Sidebar -->
+        <aside class="w-full md:w-1/5 bg-white rounded-lg shadow p-3 h-fit">
+            <nav class="grid grid-cols-2 md:grid-cols-1 gap-1">
+                <button onclick="window.switchTab('pos')" id="tab-pos" class="tab-btn w-full text-left px-3 py-2 rounded-md font-medium text-amber-900 bg-amber-50 text-xs md:text-sm">🛒 Kasir</button>
+                <button onclick="window.switchTab('incoming')" id="tab-incoming" class="tab-btn w-full text-left px-3 py-2 rounded-md font-medium text-gray-600 hover:bg-amber-50 text-xs md:text-sm">📦 Stok Masuk</button>
+                <button onclick="window.switchTab('opnam')" id="tab-opnam" class="tab-btn w-full text-left px-3 py-2 rounded-md font-medium text-gray-600 hover:bg-amber-50 text-xs md:text-sm">📋 Opnam</button>
+                <button onclick="window.switchTab('customers')" id="tab-customers" class="tab-btn w-full text-left px-3 py-2 rounded-md font-medium text-gray-600 hover:bg-amber-50 text-xs md:text-sm">👥 Pelanggan</button>
+                <button onclick="window.switchTab('history')" id="tab-history" class="tab-btn w-full text-left px-3 py-2 rounded-md font-medium text-gray-600 hover:bg-amber-50 text-xs md:text-sm">📜 Histori</button>
+                <button onclick="window.switchTab('reports')" id="tab-reports" class="tab-btn w-full text-left px-3 py-2 rounded-md font-medium text-gray-600 hover:bg-amber-50 text-xs md:text-sm">📊 Laporan</button>
+            </nav>
+        </aside>
+
+        <!-- Main Content Area -->
+        <main class="w-full md:w-4/5">
+
+            <!-- TAB 1: KASIR (POS) -->
+            <section id="sec-pos" class="tab-content grid grid-cols-1 lg:grid-cols-3 gap-4">
+                <div class="lg:col-span-2 bg-white p-4 rounded-lg shadow">
+                    <h2 class="text-base font-bold mb-3 text-gray-800">Pilih Produk Kopi & Pengaturan Master</h2>
+                    <div class="flex flex-col sm:flex-row gap-2 mb-3">
+                        <input type="text" id="pos-search" onkeyup="window.renderPOSProducts()" placeholder="Cari kopi..." class="border p-2 rounded w-full text-xs md:text-sm">
+                        <select id="pos-category-filter" onchange="window.renderPOSProducts()" class="border p-2 rounded text-xs md:text-sm">
+                            <option value="ALL">Semua Kategori</option>
+                            <option value="Local Arabica">Local Arabica</option>
+                            <option value="Robusta">Robusta</option>
+                            <option value="Blend">Blend</option>
+                            <option value="Honey">Honey</option>
+                            <option value="Natural">Natural</option>
+                            <option value="Wine">Wine</option>
+                            <option value="Import">Import</option>
+                            <option value="Specialty">Specialty</option>
+                            <option value="Excelsa">Excelsa</option>
+                            <option value="Liberica">Liberica</option>
+                        </select>
+                    </div>
+                    <div id="pos-product-list" class="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-[550px] overflow-y-auto pr-1"></div>
+                </div>
+
+                <div class="bg-white p-4 rounded-lg shadow flex flex-col justify-between">
+                    <div>
+                        <h2 class="text-base font-bold mb-3 text-gray-800">Keranjang Belanja</h2>
+                        <div class="mb-3">
+                            <label class="block text-[11px] font-semibold text-gray-600 mb-1">Pelanggan</label>
+                            <select id="pos-customer-select" class="border p-2 rounded w-full text-xs md:text-sm">
+                                <option value="">-- Umum / Tanpa Nama --</option>
+                            </select>
+                        </div>
+                        <div id="cart-items" class="space-y-2 max-h-[280px] overflow-y-auto mb-3 divide-y">
+                            <p class="text-xs text-gray-400 text-center py-4">Keranjang kosong</p>
+                        </div>
+                    </div>
+                    <div class="border-t pt-3">
+                        <div class="flex justify-between font-bold text-base mb-3">
+                            <span>Total:</span>
+                            <span id="cart-total" class="text-amber-900">Rp0</span>
+                        </div>
+                        <button onclick="window.checkout()" id="btn-checkout" class="w-full bg-amber-900 hover:bg-amber-800 text-white py-2.5 rounded font-bold shadow text-sm">Proses Transaksi</button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- TAB 2: STOK MASUK -->
+            <section id="sec-incoming" class="tab-content hidden bg-white p-5 rounded-lg shadow">
+                <h2 class="text-lg font-bold mb-4 text-gray-800">Pencatatan Stok Masuk (Restock)</h2>
+                <form id="incoming-form" onsubmit="window.handleIncoming(event)" class="max-w-lg space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium mb-1">Cari Nama Kopi</label>
+                        <input type="text" id="incoming-search" onkeyup="window.renderIncomingOptions()" placeholder="Ketik nama kopi untuk memfilter..." class="border p-2 rounded w-full text-sm mb-2">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium mb-1">Pilih Produk</label>
+                        <select id="incoming-product" required class="border p-2 rounded w-full text-sm"></select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium mb-1">Jumlah Tambahan (Gram)</label>
+                        <input type="number" id="incoming-qty" min="1" required class="border p-2 rounded w-full text-sm" placeholder="Contoh: 1000">
+                    </div>
+                    <button type="submit" class="bg-emerald-700 hover:bg-emerald-800 text-white px-4 py-2 rounded text-sm font-bold">Simpan Stok Masuk</button>
+                </form>
+            </section>
+
+            <!-- TAB 3: STOCK OPNAM -->
+            <section id="sec-opnam" class="tab-content hidden bg-white p-5 rounded-lg shadow">
+                <h2 class="text-lg font-bold mb-2 text-gray-800">Rekapitulasi Stock Opnam</h2>
+                <p class="text-xs text-gray-500 mb-4">Masukkan hasil penimbangan fisik untuk memperbarui persediaan sistem ke Cloud.</p>
+                <div class="mb-4">
+                    <input type="text" id="opnam-search" onkeyup="window.renderOpnam()" placeholder="Cari item produk untuk stock opnam..." class="border p-2 rounded w-full md:w-1/3 text-sm">
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm text-left border">
+                        <thead class="bg-gray-100 border-b">
+                            <tr>
+                                <th class="p-2 border">Nama Produk</th>
+                                <th class="p-2 border">Kategori</th>
+                                <th class="p-2 border">Stok Sistem (Gram)</th>
+                                <th class="p-2 border">Stok Fisik Opnam (Gram)</th>
+                                <th class="p-2 border">Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody id="opnam-table-body"></tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- TAB 4: MANAJEMEN PELANGGAN -->
+            <section id="sec-customers" class="tab-content hidden bg-white p-5 rounded-lg shadow">
+                <h2 class="text-lg font-bold mb-4 text-gray-800">Tambah Pelanggan Baru</h2>
+                <form id="customer-form" onsubmit="window.handleAddCustomer(event)" class="grid grid-cols-1 md:grid-cols-3 gap-3 mb-6">
+                    <input type="text" id="cust-name" required placeholder="Nama Pelanggan" class="border p-2 rounded text-sm">
+                    <input type="text" id="cust-phone" required placeholder="Nomor Telepon" class="border p-2 rounded text-sm">
+                    <input type="text" id="cust-address" required placeholder="Alamat" class="border p-2 rounded text-sm">
+                    <button type="submit" class="md:col-span-3 bg-amber-900 text-white p-2 rounded font-bold text-sm">Tambah Pelanggan</button>
+                </form>
+                <h3 class="font-bold text-md mb-2">Daftar Pelanggan</h3>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm text-left border">
+                        <thead class="bg-gray-100 border-b">
+                            <tr>
+                                <th class="p-2 border">Nama</th>
+                                <th class="p-2 border">No. Telp</th>
+                                <th class="p-2 border">Alamat</th>
+                            </tr>
+                        </thead>
+                        <tbody id="customer-table-body"></tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- TAB 5: HISTORI PENJUALAN -->
+            <section id="sec-history" class="tab-content hidden bg-white p-5 rounded-lg shadow">
+                <h2 class="text-lg font-bold mb-4 text-gray-800">Histori Transaksi Penjualan</h2>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm text-left border">
+                        <thead class="bg-gray-100 border-b">
+                            <tr>
+                                <th class="p-2 border">Invoice</th>
+                                <th class="p-2 border">Tanggal</th>
+                                <th class="p-2 border">Pelanggan</th>
+                                <th class="p-2 border">Total</th>
+                                <th class="p-2 border">Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody id="history-table-body"></tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- TAB 6: LAPORAN & GRAFIK -->
+            <section id="sec-reports" class="tab-content hidden space-y-6">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div class="bg-white p-4 rounded-lg shadow text-center">
+                        <span class="text-xs text-gray-500">Total Omset Penjualan</span>
+                        <div id="stat-omset" class="text-xl font-bold text-amber-900 mt-1">Rp0</div>
+                    </div>
+                    <div class="bg-white p-4 rounded-lg shadow text-center">
+                        <span class="text-xs text-gray-500">Total Transaksi</span>
+                        <div id="stat-count" class="text-xl font-bold text-amber-900 mt-1">0</div>
+                    </div>
+                    <div class="bg-white p-4 rounded-lg shadow text-center">
+                        <span class="text-xs text-gray-500">Total Kopi Terjual (Gram)</span>
+                        <div id="stat-weight" class="text-xl font-bold text-amber-900 mt-1">0 gr</div>
+                    </div>
+                </div>
+                <div class="bg-white p-5 rounded-lg shadow">
+                    <h3 class="font-bold mb-4">Grafik Tren Penjualan</h3>
+                    <canvas id="salesChart" height="100"></canvas>
+                </div>
+            </section>
+
+        </main>
+    </div>
+
+    <!-- AREA CETAK INVOICE PENJUALAN (PRINTABLE) -->
+    <div id="printable-invoice" class="hidden max-w-sm mx-auto bg-white p-4 border text-black">
+        <div class="text-center border-b pb-3 mb-3">
+            <h2 class="text-xl font-bold uppercase tracking-wider">☕ GENTAN KOPI</h2>
+            <p class="text-xs text-gray-600">Jl. Gentan Kopi No. 12, Yogyakarta</p>
+            <p class="text-xs text-gray-600">Telp/WA: 0812-3456-7890</p>
+        </div>
+        
+        <div class="text-xs space-y-1 mb-3 border-b pb-2">
+            <div class="flex justify-between">
+                <span class="text-gray-500">No. Invoice:</span>
+                <span id="inv-no" class="font-mono font-bold">INV-000000</span>
+            </div>
+            <div class="flex justify-between">
+                <span class="text-gray-500">Tanggal:</span>
+                <span id="inv-date">-</span>
+            </div>
+            <div class="flex justify-between">
+                <span class="text-gray-500">Pelanggan:</span>
+                <span id="inv-cust" class="font-semibold">-</span>
+            </div>
+        </div>
+
+        <table class="w-full text-xs text-left mb-3 border-b pb-2">
+            <thead>
+                <tr class="border-b text-gray-700">
+                    <th class="py-1">Item</th>
+                    <th class="py-1 text-center">Qty</th>
+                    <th class="py-1 text-right">Harga/kg</th>
+                    <th class="py-1 text-right">Subtotal</th>
+                </tr>
+            </thead>
+            <tbody id="inv-items" class="divide-y divide-gray-200"></tbody>
+        </table>
+
+        <div class="flex justify-between font-bold text-sm pt-1">
+            <span>TOTAL BAYAR:</span>
+            <span id="inv-total" class="text-base">Rp0</span>
+        </div>
+
+        <div class="text-center text-[10px] text-gray-500 mt-5 pt-3 border-t border-dashed">
+            <p>Terima kasih atas kunjungan Anda!</p>
+            <p>Biji Kopi Segar Nikmat Setiap Hari</p>
+        </div>
+    </div>
+
+    <!-- Firebase Integration & Logic -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, doc, setDoc, updateDoc, onSnapshot, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        let firebaseConfig;
+        if (typeof __firebase_config !== 'undefined') {
+            firebaseConfig = JSON.parse(__firebase_config);
+        } else {
+            firebaseConfig = {
+                apiKey: "AIzaSyDvuf2uscl_ZoUo6MxSwDOaqb_HwE1rjx0",
+                authDomain: "gentan-kopi-pos.firebaseapp.com",
+                projectId: "gentan-kopi-pos",
+                storageBucket: "gentan-kopi-pos.firebasestorage.app",
+                messagingSenderId: "196964586009",
+                appId: "1:196964586009:web:6994a641fded25868a9088",
+                measurementId: "G-XGE6911MLQ"
+            };
+        }
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'gentan-kopi-pos';
+
+        let currentUser = null;
+        let products = [];
+        let customers = [];
+        let sales = [];
+        let cart = [];
+        let chartInstance = null;
+
+        async function initAuth() {
+            try {
+                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                    await signInWithCustomToken(auth, __initial_auth_token);
+                } else {
+                    await signInAnonymously(auth);
+                }
+            } catch (err) {
+                console.error("Gagal Authentikasi: ", err);
+                document.getElementById('sync-status').innerText = "Offline Mode (Periksa Kunci Firebase)";
+                document.getElementById('sync-status').classList.replace('text-amber-200', 'text-red-300');
+            }
+        }
+
+        onAuthStateChanged(auth, (user) => {
+            currentUser = user;
+            if (user) {
+                document.getElementById('sync-status').innerText = "🟢 Online Tersinkronisasi";
+                document.getElementById('sync-status').classList.replace('text-red-300', 'text-green-300');
+                setupRealtimeListeners();
+            }
+        });
+
+        initAuth();
+
+        function setupRealtimeListeners() {
+            if (!currentUser) return;
+
+            const productsRef = collection(db, 'artifacts', appId, 'public', 'data', 'products');
+            onSnapshot(productsRef, (snapshot) => {
+                if (snapshot.empty) {
+                    seedDefaultProducts();
+                } else {
+                    products = snapshot.docs.map(doc => doc.data());
+                    products.sort((a, b) => a.category.localeCompare(b.category) || a.name.localeCompare(b.name));
+                    window.renderPOSProducts();
+                    window.renderIncomingOptions();
+                    window.renderOpnam();
+                }
+            }, (error) => console.error("Error produk:", error));
+
+            const customersRef = collection(db, 'artifacts', appId, 'public', 'data', 'customers');
+            onSnapshot(customersRef, (snapshot) => {
+                customers = snapshot.docs.map(doc => doc.data());
+                window.renderCustomerSelect();
+                window.renderCustomers();
+            }, (error) => console.error("Error pelanggan:", error));
+
+            const salesRef = collection(db, 'artifacts', appId, 'public', 'data', 'sales');
+            onSnapshot(salesRef, (snapshot) => {
+                sales = snapshot.docs.map(doc => doc.data());
+                sales.sort((a, b) => new Date(b.date) - new Date(a.date));
+                window.renderHistory();
+                window.renderReports();
+            }, (error) => console.error("Error penjualan:", error));
+        }
+
+        async function seedDefaultProducts() {
+            const defaultProducts = [
+                { id: 1, name: "Arabica Bali Kintamani Dark", category: "Local Arabica", price_per_kg: 300000, stock_gram: 0 },
+                { id: 2, name: "Arabica Bali Kintamani", category: "Local Arabica", price_per_kg: 300000, stock_gram: 550 }, 
+                { id: 3, name: "Arabica Bali Spc.", category: "Local Arabica", price_per_kg: 360000, stock_gram: 0 },
+                { id: 4, name: "Arabica Blue Batak", category: "Local Arabica", price_per_kg: 300000, stock_gram: 400 }, 
+                { id: 5, name: "Arabica Carlos Full Wash", category: "Local Arabica", price_per_kg: 360000, stock_gram: 0 },
+                { id: 6, name: "Arabica Cikuray", category: "Local Arabica", price_per_kg: 360000, stock_gram: 0 },
+                { id: 7, name: "Arabica Ciwidey", category: "Local Arabica", price_per_kg: 360000, stock_gram: 0 },
+                { id: 8, name: "Arabica Enrekang", category: "Local Arabica", price_per_kg: 300000, stock_gram: 400 }, 
+                { id: 9, name: "Arabica Flores Dark", category: "Local Arabica", price_per_kg: 300000, stock_gram: 0 },
+                { id: 10, name: "Arabica Flores Full Wash", category: "Local Arabica", price_per_kg: 360000, stock_gram: 0 },
+                { id: 11, name: "Arabica Garut Nanas", category: "Local Arabica", price_per_kg: 360000, stock_gram: 0 },
+                { id: 12, name: "Arabica Garut Spe.", category: "Local Arabica", price_per_kg: 360000, stock_gram: 0 },
+                { id: 13, name: "Arabica Gayo Esp.", category: "Local Arabica", price_per_kg: 300000, stock_gram: 800 }, 
+                { id: 14, name: "Arabica Gayo PR.", category: "Local Arabica", price_per_kg: 300000, stock_gram: 0 },
+                { id: 15, name: "Arabica Gayo Spe", category: "Local Arabica", price_per_kg: 360000, stock_gram: 0 },
+                { id: 16, name: "Arabica Ijen Raung", category: "Local Arabica", price_per_kg: 360000, stock_gram: 500 }, 
+                { id: 17, name: "Arabica Kerinci Full Wash", category: "Local Arabica", price_per_kg: 380000, stock_gram: 0 },
+                { id: 18, name: "Arabica Lintong", category: "Local Arabica", price_per_kg: 360000, stock_gram: 0 },
+                { id: 19, name: "Arabica Longberry", category: "Local Arabica", price_per_kg: 420000, stock_gram: 0 },
+                { id: 20, name: "Arabica Malabar", category: "Local Arabica", price_per_kg: 360000, stock_gram: 0 },
+                { id: 21, name: "Arabica Malino Spc.", category: "Local Arabica", price_per_kg: 400000, stock_gram: 0 },
+                { id: 22, name: "Arabica Mandailing", category: "Local Arabica", price_per_kg: 300000, stock_gram: 800 }, 
+                { id: 23, name: "Arabica Mandailing Spc.", category: "Local Arabica", price_per_kg: 360000, stock_gram: 0 },
+                { id: 24, name: "Arabica Manggarai", category: "Local Arabica", price_per_kg: 360000, stock_gram: 500 }, 
+                { id: 25, name: "Arabica Manglayang", category: "Local Arabica", price_per_kg: 360000, stock_gram: 0 },
+                { id: 26, name: "Arabica Mekar Wangi", category: "Local Arabica", price_per_kg: 360000, stock_gram: 500 }, 
+                { id: 27, name: "Arabica Papua Dark", category: "Local Arabica", price_per_kg: 400000, stock_gram: 0 },
+                { id: 28, name: "Arabica Papua Wamena", category: "Local Arabica", price_per_kg: 400000, stock_gram: 0 },
+                { id: 29, name: "Arabica Pieberry", category: "Local Arabica", price_per_kg: 420000, stock_gram: 0 },
+                { id: 30, name: "Arabica Puntang Full Wash", category: "Local Arabica", price_per_kg: 400000, stock_gram: 0 },
+                { id: 31, name: "Arabica Samosir", category: "Local Arabica", price_per_kg: 360000, stock_gram: 0 },
+                { id: 32, name: "Arabica Sidikalang Dark", category: "Local Arabica", price_per_kg: 300000, stock_gram: 0 },
+                { id: 33, name: "Arabica Sidikalang PR.", category: "Local Arabica", price_per_kg: 360000, stock_gram: 0 },
+                { id: 34, name: "Arabica Sigararutang", category: "Local Arabica", price_per_kg: 360000, stock_gram: 0 },
+                { id: 35, name: "Arabica Solok", category: "Local Arabica", price_per_kg: 360000, stock_gram: 0 },
+                { id: 36, name: "Arabica Sumendo", category: "Local Arabica", price_per_kg: 360000, stock_gram: 500 }, 
+                { id: 37, name: "Arabica T. Mamasa", category: "Local Arabica", price_per_kg: 360000, stock_gram: 0 },
+                { id: 38, name: "Arabica T. Sapan", category: "Local Arabica", price_per_kg: 360000, stock_gram: 0 },
+                { id: 39, name: "Arabica Takengon", category: "Local Arabica", price_per_kg: 360000, stock_gram: 0 },
+                { id: 40, name: "Arabica Temanggung", category: "Local Arabica", price_per_kg: 360000, stock_gram: 500 }, 
+                { id: 41, name: "Arabica Toraja Kalosi", category: "Local Arabica", price_per_kg: 300000, stock_gram: 300 }, 
+                { id: 42, name: "Arabica Toraja Pulu-Pulu", category: "Local Arabica", price_per_kg: 360000, stock_gram: 0 },
+                { id: 43, name: "Classic Home Blend", category: "Blend", price_per_kg: 300000, stock_gram: 0 },
+                { id: 44, name: "Espresso", category: "Blend", price_per_kg: 260000, stock_gram: 0 },
+                { id: 45, name: "Honey Bali", category: "Honey", price_per_kg: 400000, stock_gram: 0 },
+                { id: 46, name: "Honey Flores", category: "Honey", price_per_kg: 400000, stock_gram: 0 },
+                { id: 47, name: "Honey Gayo", category: "Honey", price_per_kg: 400000, stock_gram: 0 },
+                { id: 48, name: "Honey Halu", category: "Honey", price_per_kg: 400000, stock_gram: 0 },
+                { id: 49, name: "Honey Red", category: "Honey", price_per_kg: 420000, stock_gram: 0 },
+                { id: 50, name: "Honey Sunda Gulali", category: "Honey", price_per_kg: 420000, stock_gram: 0 },
+                { id: 51, name: "Honey Tarlos", category: "Honey", price_per_kg: 400000, stock_gram: 0 },
+                { id: 52, name: "Natural Bali", category: "Natural", price_per_kg: 400000, stock_gram: 0 },
+                { id: 53, name: "Natural Banana", category: "Natural", price_per_kg: 470000, stock_gram: 0 },
+                { id: 54, name: "Natural Flores", category: "Natural", price_per_kg: 400000, stock_gram: 0 },
+                { id: 55, name: "Natural Garut", category: "Natural", price_per_kg: 400000, stock_gram: 0 },
+                { id: 56, name: "Natural Gayo", category: "Natural", price_per_kg: 400000, stock_gram: 0 },
+                { id: 57, name: "Natural Ijen", category: "Natural", price_per_kg: 400000, stock_gram: 0 },
+                { id: 58, name: "Natural Kamojang", category: "Natural", price_per_kg: 400000, stock_gram: 0 },
+                { id: 59, name: "Natural Patuha", category: "Natural", price_per_kg: 420000, stock_gram: 0 },
+                { id: 60, name: "Natural Red", category: "Natural", price_per_kg: 420000, stock_gram: 0 },
+                { id: 61, name: "Natural Tarlos", category: "Natural", price_per_kg: 400000, stock_gram: 0 },
+                { id: 62, name: "Natural Y. Anggur", category: "Natural", price_per_kg: 420000, stock_gram: 0 },
+                { id: 63, name: "Natural Y. Borbon", category: "Natural", price_per_kg: 420000, stock_gram: 0 },
+                { id: 64, name: "Natural Y. Datura", category: "Natural", price_per_kg: 420000, stock_gram: 0 },
+                { id: 65, name: "Arabica Garut Wine", category: "Wine", price_per_kg: 470000, stock_gram: 0 },
+                { id: 66, name: "Arabica Gayo Wine L/M/Dark", category: "Wine", price_per_kg: 470000, stock_gram: 0 },
+                { id: 67, name: "Arabica Puntang Wine", category: "Wine", price_per_kg: 470000, stock_gram: 0 },
+                { id: 68, name: "Arabica Brazil Honey", category: "Import", price_per_kg: 520000, stock_gram: 0 },
+                { id: 69, name: "Arabica Colombia", category: "Import", price_per_kg: 520000, stock_gram: 0 },
+                { id: 70, name: "Arabica Guatemala", category: "Import", price_per_kg: 520000, stock_gram: 0 },
+                { id: 71, name: "Arabica Bluemount.", category: "Specialty", price_per_kg: 470000, stock_gram: 0 },
+                { id: 72, name: "Arabica Exotis Anaerob Jagong Jeget", category: "Specialty", price_per_kg: 420000, stock_gram: 0 },
+                { id: 73, name: "Arabica Geisha", category: "Specialty", price_per_kg: 470000, stock_gram: 0 },
+                { id: 74, name: "Arabica Luwak", category: "Specialty", price_per_kg: 620000, stock_gram: 0 },
+                { id: 75, name: "Arabica Puntang Honey", category: "Specialty", price_per_kg: 920000, stock_gram: 0 },
+                { id: 76, name: "Excelsa Ijen", category: "Excelsa", price_per_kg: 340000, stock_gram: 0 },
+                { id: 77, name: "Liberica Jambi", category: "Liberica", price_per_kg: 340000, stock_gram: 0 },
+                { id: 78, name: "Robusta Malang", category: "Robusta", price_per_kg: 150000, stock_gram: 1250 }
+            ];
+
+            for (const p of defaultProducts) {
+                const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'products', p.id.toString());
+                await setDoc(docRef, p);
+            }
+        }
+
+        function formatIDR(num) {
+            return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(num);
+        }
+
+        window.switchTab = function(tabName) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            document.querySelectorAll('.tab-btn').forEach(el => {
+                el.classList.remove('bg-amber-50', 'text-amber-900');
+                el.classList.add('text-gray-600');
+            });
+
+            document.getElementById(`sec-${tabName}`).classList.remove('hidden');
+            const activeBtn = document.getElementById(`tab-${tabName}`);
+            activeBtn.classList.add('bg-amber-50', 'text-amber-900');
+
+            if(tabName === 'pos') { window.renderPOSProducts(); window.renderCustomerSelect(); }
+            if(tabName === 'incoming') window.renderIncomingOptions();
+            if(tabName === 'opnam') window.renderOpnam();
+            if(tabName === 'customers') window.renderCustomers();
+            if(tabName === 'history') window.renderHistory();
+            if(tabName === 'reports') window.renderReports();
+        }
+
+        // ================= KASIR (POS) =================
+        window.renderCustomerSelect = function() {
+            const custSelect = document.getElementById('pos-customer-select');
+            custSelect.innerHTML = '<option value="">-- Umum / Tanpa Nama --</option>' + 
+                customers.map(c => `<option value="${c.id}">${c.name} (${c.phone})</option>`).join('');
+        }
+
+        window.renderPOSProducts = function() {
+            const search = document.getElementById('pos-search').value.toLowerCase();
+            const cat = document.getElementById('pos-category-filter').value;
+            const container = document.getElementById('pos-product-list');
+
+            const filtered = products.filter(p => {
+                const matchName = p.name.toLowerCase().includes(search);
+                const matchCat = cat === 'ALL' || p.category === cat;
+                return matchName && matchCat;
+            });
+
+            container.innerHTML = filtered.map(p => `
+                <div class="border rounded-lg p-3 bg-white shadow-sm flex flex-col justify-between">
+                    <div>
+                        <div class="flex justify-between items-center mb-1">
+                            <span class="text-[9px] bg-amber-100 text-amber-800 px-1.5 py-0.5 rounded font-bold">${p.category}</span>
+                        </div>
+                        
+                        <!-- Input Edit Nama Produk -->
+                        <div class="mb-1.5">
+                            <label class="text-[10px] text-gray-500 font-semibold block">Nama Item:</label>
+                            <input type="text" id="name-input-${p.id}" value="${p.name}" class="border p-1 rounded text-xs w-full font-bold text-gray-800 bg-gray-50 focus:bg-white">
+                        </div>
+
+                        <!-- Input Edit Harga per Kg -->
+                        <div class="mb-2 flex items-center gap-1">
+                            <label class="text-[10px] text-gray-500 font-semibold whitespace-nowrap">Harga/kg:</label>
+                            <input type="number" id="price-input-${p.id}" value="${p.price_per_kg}" step="1000" class="border p-1 rounded text-xs w-full font-semibold text-amber-900 bg-gray-50 focus:bg-white">
+                            <button onclick="window.updateProductInfo(${p.id})" class="bg-blue-600 hover:bg-blue-700 text-white text-[10px] px-2 py-1 rounded font-medium whitespace-nowrap">Simpan</button>
+                        </div>
+
+                        <p class="text-xs ${p.stock_gram > 0 ? 'text-emerald-600' : 'text-red-500'} font-semibold">Stok: ${p.stock_gram} gr</p>
+                    </div>
+
+                    <!-- Tombol Pilihan Kemasan yang Disusun Rapi (100g, 200g, 250g, 500g, 1kg) -->
+                    <div class="mt-3 grid grid-cols-5 gap-1 pt-2 border-t border-gray-100">
+                        <button onclick="window.addToCart(${p.id}, 100)" class="bg-amber-800 text-white text-[10px] py-1.5 rounded hover:bg-amber-700 font-bold transition">100g</button>
+                        <button onclick="window.addToCart(${p.id}, 200)" class="bg-amber-800 text-white text-[10px] py-1.5 rounded hover:bg-amber-700 font-bold transition">200g</button>
+                        <button onclick="window.addToCart(${p.id}, 250)" class="bg-amber-800 text-white text-[10px] py-1.5 rounded hover:bg-amber-700 font-bold transition">250g</button>
+                        <button onclick="window.addToCart(${p.id}, 500)" class="bg-amber-800 text-white text-[10px] py-1.5 rounded hover:bg-amber-700 font-bold transition">500g</button>
+                        <button onclick="window.addToCart(${p.id}, 1000)" class="bg-amber-900 text-white text-[10px] py-1.5 rounded hover:bg-amber-800 font-bold transition">1kg</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        window.updateProductInfo = async function(productId) {
+            if (!currentUser) return;
+            const newName = document.getElementById(`name-input-${productId}`).value.trim();
+            const newPrice = parseInt(document.getElementById(`price-input-${productId}`).value);
+
+            if (!newName) {
+                alert('Nama produk tidak boleh kosong!');
+                return;
+            }
+            if (isNaN(newPrice) || newPrice < 0) {
+                alert('Masukkan nominal harga yang valid!');
+                return;
+            }
+
+            try {
+                const prodRef = doc(db, 'artifacts', appId, 'public', 'data', 'products', productId.toString());
+                await updateDoc(prodRef, { 
+                    name: newName,
+                    price_per_kg: newPrice 
+                });
+                alert('Nama dan harga produk berhasil diperbarui secara real-time ke seluruh sistem!');
+            } catch (err) {
+                console.error(err);
+                alert('Gagal memperbarui produk.');
+            }
+        }
+
+        window.addToCart = function(productId, qtyGram) {
+            const prod = products.find(p => p.id === productId);
+            if (!prod || prod.stock_gram < qtyGram) {
+                alert('Stok tidak mencukupi atau habis!');
+                return;
+            }
+
+            const existing = cart.find(c => c.productId === productId);
+            if (existing) {
+                if(prod.stock_gram < existing.qtyGram + qtyGram) {
+                    alert('Stok tidak mencukupi untuk ditambah lagi!');
+                    return;
+                }
+                existing.qtyGram += qtyGram;
+            } else {
+                cart.push({ productId, qtyGram, price_per_kg: prod.price_per_kg, name: prod.name });
+            }
+            window.renderCart();
+        }
+
+        window.renderCart = function() {
+            const container = document.getElementById('cart-items');
+            let total = 0;
+
+            if (cart.length === 0) {
+                container.innerHTML = '<p class="text-xs text-gray-400 text-center py-4">Keranjang kosong</p>';
+                document.getElementById('cart-total').innerText = formatIDR(0);
+                return;
+            }
+
+            container.innerHTML = cart.map((item, index) => {
+                const subtotal = (item.qtyGram / 1000) * item.price_per_kg;
+                total += subtotal;
+                return `
+                    <div class="pt-2 flex justify-between items-center text-xs">
+                        <div>
+                            <p class="font-bold text-gray-700">${item.name}</p>
+                            <p class="text-gray-400">${item.qtyGram} gram x ${formatIDR(item.price_per_kg)}</p>
+                        </div>
+                        <div class="text-right">
+                            <p class="font-bold">${formatIDR(subtotal)}</p>
+                            <button onclick="window.removeFromCart(${index})" class="text-red-500 hover:underline text-[10px]">Hapus</button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            document.getElementById('cart-total').innerText = formatIDR(total);
+        }
+
+        window.removeFromCart = function(index) {
+            cart.splice(index, 1);
+            window.renderCart();
+        }
+
+        window.checkout = async function() {
+            if (cart.length === 0) return alert('Keranjang belanja kosong!');
+            if (!currentUser) return alert('Gagal memproses, koneksi cloud terputus.');
+
+            const btnCheckout = document.getElementById('btn-checkout');
+            btnCheckout.innerText = "Memproses...";
+            btnCheckout.disabled = true;
+
+            try {
+                const custId = document.getElementById('pos-customer-select').value;
+                const customer = customers.find(c => c.id == custId) || { name: 'Umum' };
+                
+                let totalAmount = 0;
+                
+                for (const item of cart) {
+                    const prod = products.find(p => p.id === item.productId);
+                    if (prod) {
+                        const newStock = prod.stock_gram - item.qtyGram;
+                        const prodRef = doc(db, 'artifacts', appId, 'public', 'data', 'products', prod.id.toString());
+                        await updateDoc(prodRef, { stock_gram: newStock });
+                    }
+                    totalAmount += (item.qtyGram / 1000) * item.price_per_kg;
+                }
+
+                const saleId = Date.now().toString();
+                const newSale = {
+                    id: saleId,
+                    invoice: 'INV-' + Math.floor(100000 + Math.random() * 900000),
+                    date: new Date().toISOString(),
+                    customerName: customer.name,
+                    items: [...cart],
+                    totalAmount: totalAmount
+                };
+
+                const saleRef = doc(db, 'artifacts', appId, 'public', 'data', 'sales', saleId);
+                await setDoc(saleRef, newSale);
+
+                window.printInvoice(newSale);
+
+                cart = [];
+                window.renderCart();
+
+            } catch (err) {
+                console.error(err);
+                alert('Terjadi kesalahan saat sinkronisasi data!');
+            } finally {
+                btnCheckout.innerText = "Proses Transaksi";
+                btnCheckout.disabled = false;
+            }
+        }
+
+        window.printInvoice = function(sale) {
+            document.getElementById('inv-no').innerText = sale.invoice;
+            document.getElementById('inv-date').innerText = new Date(sale.date).toLocaleString('id-ID');
+            document.getElementById('inv-cust').innerText = sale.customerName || 'Umum';
+            
+            const invBody = document.getElementById('inv-items');
+            invBody.innerHTML = sale.items.map(item => {
+                const subtotal = (item.qtyGram / 1000) * item.price_per_kg;
+                return `
+                    <tr>
+                        <td class="py-1.5 pr-1 font-medium">${item.name}</td>
+                        <td class="py-1.5 px-1 text-center">${item.qtyGram}g</td>
+                        <td class="py-1.5 px-1 text-right">${formatIDR(item.price_per_kg)}</td>
+                        <td class="py-1.5 pl-1 text-right font-bold">${formatIDR(subtotal)}</td>
+                    </tr>
+                `;
+            }).join('');
+            
+            document.getElementById('inv-total').innerText = formatIDR(sale.totalAmount);
+
+            const invoiceElem = document.getElementById('printable-invoice');
+            invoiceElem.classList.remove('hidden');
+
+            setTimeout(() => {
+                window.print();
+                invoiceElem.classList.add('hidden');
+            }, 300);
+        }
+
+        // ================= STOK MASUK (INCOMING) =================
+        window.renderIncomingOptions = function() {
+            const searchVal = (document.getElementById('incoming-search').value || "").toLowerCase();
+            const select = document.getElementById('incoming-product');
+            
+            const filtered = products.filter(p => p.name.toLowerCase().includes(searchVal));
+            
+            if (filtered.length === 0) {
+                select.innerHTML = '<option value="">-- Kopi tidak ditemukan --</option>';
+                return;
+            }
+
+            select.innerHTML = filtered.map(p => `<option value="${p.id}">${p.name} (Stok: ${p.stock_gram} gr)</option>`).join('');
+        }
+
+        window.handleIncoming = async function(e) {
+            e.preventDefault();
+            if (!currentUser) return;
+            const prodId = document.getElementById('incoming-product').value;
+            if (!prodId) return alert('Silakan pilih produk terlebih dahulu.');
+            const qty = parseInt(document.getElementById('incoming-qty').value);
+
+            const prod = products.find(p => p.id.toString() === prodId);
+            if (prod) {
+                const newStock = prod.stock_gram + qty;
+                const prodRef = doc(db, 'artifacts', appId, 'public', 'data', 'products', prod.id.toString());
+                await updateDoc(prodRef, { stock_gram: newStock });
+                
+                alert(`Stok ${prod.name} tersinkronisasi ke Cloud! (+${qty} gr)`);
+                document.getElementById('incoming-form').reset();
+                window.renderIncomingOptions();
+            }
+        }
+
+        // ================= STOCK OPNAM (DENGAN SEARCH) =================
+        window.renderOpnam = function() {
+            const searchVal = (document.getElementById('opnam-search')?.value || "").toLowerCase();
+            const tbody = document.getElementById('opnam-table-body');
+            
+            const filtered = products.filter(p => p.name.toLowerCase().includes(searchVal) || p.category.toLowerCase().includes(searchVal));
+
+            if (filtered.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-gray-400">Tidak ada produk ditemukan</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = filtered.map(p => `
+                <tr class="border-b hover:bg-gray-50">
+                    <td class="p-2 border font-medium">${p.name}</td>
+                    <td class="p-2 border">${p.category}</td>
+                    <td class="p-2 border font-bold text-amber-900">${p.stock_gram} gr</td>
+                    <td class="p-2 border">
+                        <input type="number" id="opnam-input-${p.id}" value="${p.stock_gram}" class="border p-1 rounded w-28 text-sm">
+                    </td>
+                    <td class="p-2 border">
+                        <button onclick="window.updateOpnam(${p.id})" class="bg-amber-800 text-white text-xs px-2 py-1 rounded">Sinkronisasi Update</button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        window.updateOpnam = async function(productId) {
+            if (!currentUser) return;
+            const val = parseInt(document.getElementById(`opnam-input-${productId}`).value);
+            if (isNaN(val) || val < 0) return alert('Masukkan angka stok yang valid!');
+            
+            const prod = products.find(p => p.id === productId);
+            if (prod) {
+                const prodRef = doc(db, 'artifacts', appId, 'public', 'data', 'products', productId.toString());
+                await updateDoc(prodRef, { stock_gram: val });
+                alert(`Stok ${prod.name} berhasil diperbarui di seluruh perangkat!`);
+            }
+        }
+
+        // ================= CUSTOMERS =================
+        window.renderCustomers = function() {
+            const tbody = document.getElementById('customer-table-body');
+            tbody.innerHTML = customers.map(c => `
+                <tr class="border-b">
+                    <td class="p-2 border font-medium">${c.name}</td>
+                    <td class="p-2 border">${c.phone}</td>
+                    <td class="p-2 border">${c.address}</td>
+                </tr>
+            `).join('');
+        }
+
+        window.handleAddCustomer = async function(e) {
+            e.preventDefault();
+            if (!currentUser) return;
+            const name = document.getElementById('cust-name').value;
+            const phone = document.getElementById('cust-phone').value;
+            const address = document.getElementById('cust-address').value;
+
+            const newCustId = Date.now().toString();
+            const newCust = { id: newCustId, name, phone, address };
+            
+            const custRef = doc(db, 'artifacts', appId, 'public', 'data', 'customers', newCustId);
+            await setDoc(custRef, newCust);
+            
+            document.getElementById('customer-form').reset();
+        }
+
+        // ================= HISTORI =================
+        window.renderHistory = function() {
+            const tbody = document.getElementById('history-table-body');
+            tbody.innerHTML = sales.map(s => `
+                <tr class="border-b hover:bg-gray-50">
+                    <td class="p-2 border font-mono font-bold">${s.invoice}</td>
+                    <td class="p-2 border">${new Date(s.date).toLocaleString('id-ID')}</td>
+                    <td class="p-2 border">${s.customerName}</td>
+                    <td class="p-2 border font-bold">${formatIDR(s.totalAmount)}</td>
+                    <td class="p-2 border flex gap-1">
+                        <button onclick='window.printInvoice(${JSON.stringify(s)})' class="bg-gray-700 hover:bg-gray-800 text-white text-xs px-2 py-1 rounded">Cetak</button>
+                        <button onclick='window.deleteSale("${s.id}")' class="bg-red-600 hover:bg-red-700 text-white text-xs px-2 py-1 rounded">Hapus</button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        window.deleteSale = async function(saleId) {
+            if (!currentUser) return alert('Koneksi cloud terputus.');
+            
+            if (!confirm('Apakah Anda yakin ingin menghapus transaksi ini? Stok kopi yang terjual akan otomatis dikembalikan ke sistem.')) {
+                return;
+            }
+
+            try {
+                const sale = sales.find(s => s.id === saleId);
+                if (!sale) return;
+
+                for (const item of sale.items) {
+                    const prod = products.find(p => p.id === item.productId);
+                    if (prod) {
+                        const newStock = prod.stock_gram + item.qtyGram;
+                        const prodRef = doc(db, 'artifacts', appId, 'public', 'data', 'products', prod.id.toString());
+                        await updateDoc(prodRef, { stock_gram: newStock });
+                    }
+                }
+
+                const saleRef = doc(db, 'artifacts', appId, 'public', 'data', 'sales', saleId);
+                await deleteDoc(saleRef);
+
+                alert('Data transaksi berhasil dihapus dari cloud dan stok telah dikembalikan.');
+            } catch (err) {
+                console.error("Error menghapus transaksi: ", err);
+                alert('Gagal menghapus transaksi. Periksa koneksi internet Anda.');
+            }
+        }
+
+        // ================= REPORTS =================
+        window.renderReports = function() {
+            let totalOmset = 0;
+            let totalWeight = 0;
+
+            sales.forEach(s => {
+                totalOmset += s.totalAmount;
+                s.items.forEach(i => totalWeight += i.qtyGram);
+            });
+
+            document.getElementById('stat-omset').innerText = formatIDR(totalOmset);
+            document.getElementById('stat-count').innerText = sales.length;
+            document.getElementById('stat-weight').innerText = `${totalWeight} gr`;
+
+            const ctx = document.getElementById('salesChart').getContext('2d');
+            const salesByDate = {};
+            
+            [...sales].reverse().forEach(s => {
+                const dateKey = new Date(s.date).toLocaleDateString('id-ID');
+                salesByDate[dateKey] = (salesByDate[dateKey] || 0) + s.totalAmount;
+            });
+
+            if (chartInstance) chartInstance.destroy();
+
+            chartInstance = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: Object.keys(salesByDate),
+                    datasets: [{
+                        label: 'Omset Penjualan (Rp)',
+                        data: Object.values(salesByDate),
+                        borderColor: '#78350f',
+                        backgroundColor: 'rgba(120, 53, 15, 0.1)',
+                        fill: true,
+                        tension: 0.3
+                    }]
+                },
+                options: { responsive: true, plugins: { legend: { display: true } } }
+            });
+        }
+    </script>
+</body>
+</html>
+
+
