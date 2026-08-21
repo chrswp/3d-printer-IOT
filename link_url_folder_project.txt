@@ -2,3 +2,9 @@
 
 2. Video test integrasi 3dprinter akses dari web https://www.youtube.com/watch?v=SD5eyY_p02E
 Konsep PC <- VIA WIFI/LAN -> Modul Integrasi <-- UART --> 3D Printer
+
+3. Video testing integrasi 3d Printer, progres 90%
+https://www.youtube.com/watch?v=EgmYhuP9fCA&t=23s
+
+4. Video tutorial setting dan akses web, progres 100%
+https://www.youtube.com/watch?v=Xi4bc5D3cU4&t=6s
