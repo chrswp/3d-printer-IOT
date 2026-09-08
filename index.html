@@ -224,22 +224,22 @@
                 title: 'Modul ESP32-CAM', date: '13 Juli 2026',
                 description: 'Persiapan komponen untuk streaming.'
             },
-			{
-				id: 6, type: 'video', 
-				url: 'https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&q=80&w=800',
-				videoUrl: 'https://www.youtube.com/watch?v=EgmYhuP9fCA&t=23s',
-				title: 'Testing progress, 95%', 
-				date: '1 Agustus 2026',
-				description: 'Testing Progress 95%, all sistem sudah berjalan sisa perapian dan aging.'
-			},
-			{
-				id: 7, type: 'video', 
-				url: 'https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&q=80&w=800',
-				videoUrl: 'https://www.youtube.com/watch?v=Xi4bc5D3cU4&t=6s',
-				title: 'Dokumentasi dan tutorial progress 100%', 
-				date: '14 Agustus 2026',
-				description: 'Tutorial penggunaan web dan 3D Printer, progress 100%'
-			}
+            {
+                id: 6, type: 'video', 
+                url: 'https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&q=80&w=800',
+                videoUrl: 'https://www.youtube.com/watch?v=EgmYhuP9fCA&t=23s',
+                title: 'Testing progress, 95%', 
+                date: '1 Agustus 2026',
+                description: 'Testing Progress 95%, all sistem sudah berjalan sisa perapian dan aging.'
+            },
+            {
+                id: 7, type: 'video', 
+                url: 'https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&q=80&w=800',
+                videoUrl: 'https://www.youtube.com/watch?v=Xi4bc5D3cU4&t=6s',
+                title: 'Dokumentasi dan tutorial progress 100%', 
+                date: '14 Agustus 2026',
+                description: 'Tutorial penggunaan web dan 3D Printer, progress 100%'
+            }
         ];
 
         let activeTaskId = 1; // Default active task
@@ -380,7 +380,6 @@
         }
 
         function renderCharts() {
-            // Chart.js Setup
             Chart.defaults.font.family = "'Inter', sans-serif";
             Chart.defaults.color = '#64748b';
 
@@ -389,7 +388,7 @@
             new Chart(barCtx, {
                 type: 'bar',
                 data: {
-                    labels: tasks.map(t => t.title.split(' ')[0] + ' ' + (t.title.split(' ')[1] || '')), // Short labels
+                    labels: tasks.map(t => t.title.split(' ')[0] + ' ' + (t.title.split(' ')[1] || '')),
                     datasets: [
                         {
                             label: 'Total Estimasi (Hari)',
@@ -442,7 +441,6 @@
             });
         }
 
-        // Initialize App on load
         window.addEventListener('DOMContentLoaded', initDashboard);
     </script>
 </body>
