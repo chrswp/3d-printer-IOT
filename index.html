@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="id">
 <head>
@@ -42,8 +41,8 @@
                     <div class="flex flex-col items-end">
                         <span class="text-xs text-slate-500 uppercase tracking-wider font-semibold">Status Proyek</span>
                         <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-medium bg-emerald-100 text-emerald-800">
-                            <div class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
-                            On Track
+                            <div class="w-2 h-2 rounded-full bg-emerald-500"></div>
+                            Selesai (Completed)
                         </span>
                     </div>
                 </div>
@@ -62,7 +61,7 @@
                     </div>
                 </div>
                 <div class="mt-4 w-full bg-slate-100 rounded-full h-2.5">
-                    <div id="overall-progress-bar" class="bg-blue-600 h-2.5 rounded-full transition-all duration-1000" style="width: 0%"></div>
+                    <div id="overall-progress-bar" class="bg-emerald-600 h-2.5 rounded-full transition-all duration-1000" style="width: 0%"></div>
                 </div>
             </div>
 
@@ -79,13 +78,13 @@
             </div>
 
             <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 flex items-center gap-4">
-                <div class="p-4 bg-amber-50 text-amber-600 rounded-lg">
+                <div class="p-4 bg-emerald-50 text-emerald-600 rounded-lg">
                     <i data-lucide="check-circle" class="w-8 h-8"></i>
                 </div>
                 <div>
                     <p class="text-sm font-medium text-slate-500 mb-1">Fokus Saat Ini</p>
                     <p class="text-base font-semibold text-slate-900 leading-tight">
-                        Webhook Integrasi, device Integrasi, Camera Done	
+                        Webhook Integrasi, device Integrasi, Camera Done
                     </p>
                 </div>
             </div>
@@ -149,7 +148,7 @@
     <!-- Vanilla Javascript -->
     <script>
         // --- DATA ---
-        const projectData = { overallProgress: 45 };
+        const projectData = { overallProgress: 100 };
 
         const tasks = [
             {
@@ -167,38 +166,26 @@
             {
                 id: 2,
                 title: "Modifikasi Webhook",
-                description: "Setup  esp-3D, modifikasi firmware jika perlu, dan pembuatan API webhook untuk menerima trigger dari Serious Game.",
-                status: "in-progress",
-                progress: 0,
+                description: "Setup esp-3D, modifikasi firmware jika perlu, dan pembuatan API webhook untuk menerima trigger dari Serious Game.",
+                status: "completed",
+                progress: 100,
                 duration: 10,
                 icon: "gamepad-2",
-                color: "bg-blue-500",
-                textColor: "text-blue-500",
-                updates: ["esp-3D akan diinstal di server lokal", "Script Python untuk listen Webhook selesai 0%", "Menunggu integrasi endpoint dari tim developer Game"]
+                color: "bg-emerald-500",
+                textColor: "text-emerald-500",
+                updates: ["esp-3D berhasil diinstal di server lokal", "Script Python untuk listen Webhook selesai 100%", "Integrasi endpoint dari tim developer Game sukses diuji"]
             },
             {
                 id: 3,
                 title: "Integrasi Kamera",
                 description: "Pemasangan modul kamera di printer dan streaming video agar peserta game bisa melihat proses cetak secara real-time.",
-                status: "pending",
-                progress: 10,
+                status: "completed",
+                progress: 100,
                 duration: 5,
                 icon: "camera",
-                color: "bg-amber-500",
-                textColor: "text-amber-500",
-                updates: ["Modul kamera ESP32-CAM sudah dibeli", "Mencari mount kamera yang pas untuk di-print"]
-            },
-            {
-                id: 4,
-                title: "Integrasi Google Sheet",
-                description: "Membuat sistem otomatis yang membaca list file STL reward yang tersedia dari Google Sheet menggunakan Google Apps Script / API.",
-                status: "pending",
-                progress: 0,
-                duration: 7,
-                icon: "database",
-                color: "bg-slate-400",
-                textColor: "text-slate-400",
-                updates: ["Struktur tabel Google Sheet sudah disepakati"]
+                color: "bg-emerald-500",
+                textColor: "text-emerald-500",
+                updates: ["Modul kamera ESP32-CAM sudah terpasang", "Mount kamera sudah di-print dan terpasang kokoh", "Streaming video real-time aktif tanpa lag"]
             }
         ];
 
@@ -239,7 +226,7 @@
             }
         ];
 
-        let activeTaskId = 2; // Default active task
+        let activeTaskId = 1; // Default active task
 
         // --- RENDER LOGIC ---
 
@@ -449,5 +436,3 @@
     </script>
 </body>
 </html>
-
-```
