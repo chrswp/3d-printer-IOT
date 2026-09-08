@@ -61,7 +61,7 @@
                     </div>
                 </div>
                 <div class="mt-4 w-full bg-slate-100 rounded-full h-2.5">
-                    <div id="overall-progress-bar" class="bg-emerald-600 h-2.5 rounded-full transition-all duration-1000" style="width: 0%"></div>
+                    <div id="overall-progress-bar" class="bg-emerald-600 h-2.5 rounded-full transition-all duration-1000" style="width: 100%"></div>
                 </div>
             </div>
 
@@ -231,11 +231,6 @@
         // --- RENDER LOGIC ---
 
         function initDashboard() {
-            // Animate top progress bar
-            setTimeout(() => {
-                document.getElementById('overall-progress-bar').style.width = projectData.overallProgress + '%';
-            }, 500);
-
             renderTasks();
             renderTaskDetail();
             renderGallery();
